@@ -137,6 +137,31 @@
   /* --- ADDED FOR LOADER AND RESULTS --- */
   .hidden { display: none !important; }
 
+  /* --- MODAL STYLES --- */
+  #generation-modal {
+    position: fixed;
+    inset: 0; /* top, right, bottom, left = 0 */
+    z-index: 100; /* High z-index to cover everything */
+    background-color: rgba(3, 2, 5, 0.85); /* Dark, translucent background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto; /* Allow scrolling for small screens */
+  }
+  #generation-modal-content {
+    background: rgba(10, 8, 15, 0.7); /* Slightly distinct background for the content box */
+    padding: 30px;
+    border-radius: 16px;
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
+    position: relative;
+    backdrop-filter: blur(8px);
+    
+    max-width: 1000px; 
+    width: 90%; 
+    margin: 30px auto; /* Ensure some margin top/bottom */
+  }
+  
   .loader-wrapper {
     position: relative;
     display: flex;
@@ -257,6 +282,15 @@
       position: relative;
       padding-top: 30px; /* Space for the target year label */
   }
+
+  #paraphrased-output {
+      height: 300px; /* Fixed height for visual consistency in the modal */
+      min-height: 200px;
+  }
+  
+  #sources-report a {
+      color: #93c5fd; /* Tailwind blue-300 */
+  }
   /* --- END NEW TIMELINE CSS --- */
 </style>
 </head>
@@ -287,25 +321,44 @@
   </div>
 </section>
 
-<!-- Loader Section -->
-<section id="loader-section" class="content-layer hidden flex-col">
-    <div class="loader-wrapper">
-        <span class="loader-letter">G</span>
-        <span class="loader-letter">e</span>
-        <span class="loader-letter">n</span>
-        <span class="loader-letter">e</span>
-        <span class="loader-letter">r</span>
-        <span class="loader-letter">a</span>
-        <span class="loader-letter">t</span>
-        <span class="loader-letter">i</span>
-        <span class="loader-letter">n</span>
-        <span class="loader-letter">g</span>
-        <div class="loader"></div>
+<!-- Loader Section (MODIFIED TO FULL-SCREEN MODAL WITH TWO COLUMNS) -->
+<section id="generation-modal" class="hidden">
+    <div id="generation-modal-content" class="flex flex-col md:flex-row gap-6 w-full">
+        <!-- Close Button -->
+        <button id="modal-close-button" class="absolute top-3 right-3 text-purple-400 hover:text-white transition-colors p-2 rounded-full border border-transparent hover:border-purple-600 z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+
+        <!-- LEFT SIDE: Loader and Status (md:w-1/3) -->
+        <div class="flex flex-col items-center justify-center p-4 md:w-1/3"> 
+            <div class="loader-wrapper scale-100">
+                <span class="loader-letter">G</span>
+                <span class="loader-letter">e</span>
+                <span class="loader-letter">n</span>
+                <span class="loader-letter">e</span>
+                <span class="loader-letter">r</span>
+                <span class="loader-letter">a</span>
+                <span class="loader-letter">t</span>
+                <span class="loader-letter">i</span>
+                <span class="loader-letter">n</span>
+                <span class="loader-letter">g</span>
+                <div class="loader"></div>
+            </div>
+            <p id="loading-message" class="text-xl text-purple-300 animate-pulse mt-6 text-center">Reconstructing fragment...</p>
+        </div>
+
+        <!-- RIGHT SIDE: Tharoorified Explanation (md:w-2/3) -->
+        <div class="flex flex-col p-4 border border-purple-800/50 rounded-lg md:w-2/3 bg-black bg-opacity-40">
+            <h3 class="text-xl font-bold text-purple-400 mb-2">Tharoorified Explanation</h3>
+            <textarea id="paraphrased-output" readonly 
+                      class="w-full h-full p-3 rounded-lg bg-black bg-opacity-40 border-none text-gray-200 resize-none text-base italic leading-relaxed shadow-inner">
+                While you await the reconstruction, here is a Shashi Tharoorified version of the core concept...
+            </textarea>
+        </div>
     </div>
-    <p id="loading-message" class="mt-8 text-lg text-purple-300 animate-pulse">Reconstructing fragment...</p>
 </section>
 
-<!-- Results View - Simplified -->
+<!-- Results View - NO TOP PADDING NEEDED NOW -->
 <section id="results-section" class="w-full max-w-4xl mx-auto p-8 hidden relative z-10">
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-pink-400">Reconstruction</h2>
@@ -314,7 +367,7 @@
     <textarea id="reconstructed-output" readonly class="w-full h-60 p-4 rounded-lg bg-black bg-opacity-40 border border-purple-800/50 text-gray-200 focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none text-lg leading-relaxed shadow-lg"></textarea>
 
     <!-- NEW TIMELINE BOX -->
-    <div id="timeline-box" class="mt-8 p-6 bg-black bg-opacity-40 border border-purple-800/50 rounded-lg shadow-lg">
+    <div id="timeline-box" class="mt-8 p-6 bg-black bg-opacity-40 border border-purple-800/50 rounded-lg shadow-lg hidden">
         <h3 class="text-xl font-semibold text-purple-400 mb-3">Estimated Era: <span id="era-guess-output" class="text-green-400 font-mono"></span></h3>
         <div id="timeline-scale-container">
             <div id="timeline-scale" class="relative h-2 bg-purple-700/50 rounded-full">
@@ -328,8 +381,8 @@
     </div>
     <!-- END NEW TIMELINE BOX -->
 
-    <!-- NEW CONTEXT BOXES -->
-    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- NEW CONTEXT BOXES - Wrapped in container to control visibility -->
+    <div id="context-boxes-container" class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
         <!-- Slang/Definitions -->
         <div class="md:col-span-1 p-6 bg-black bg-opacity-40 border border-purple-800/50 rounded-lg shadow-lg">
             <h3 class="text-xl font-semibold text-purple-400 mb-3">Slang/Definitions</h3>
@@ -351,6 +404,7 @@
         </div>
     </div>
     <!-- END NEW CONTEXT BOXES -->
+    
 </section>
 
 <script>
@@ -505,15 +559,17 @@
 (function(){
   // --- DOM Elements ---
   const searchSection = document.getElementById('search-section');
-  const loaderSection = document.getElementById('loader-section');
+  const generationModal = document.getElementById('generation-modal'); 
   const resultsSection = document.getElementById('results-section');
   
   const searchInput = document.getElementById('main-search');
   const searchButton = document.getElementById('main-go');
   const loadingMessage = document.getElementById('loading-message');
+  const modalCloseButton = document.getElementById('modal-close-button'); 
 
   const reconstructedOutput = document.getElementById('reconstructed-output');
   const newSearchButton = document.getElementById('new-search-button');
+  const paraphrasedOutput = document.getElementById('paraphrased-output'); 
 
   // --- Timeline Elements ---
   const timelineBox = document.getElementById('timeline-box');
@@ -526,21 +582,51 @@
   const fastContextSlang = document.getElementById('fast-context-slang');
   const fastContextTone = document.getElementById('fast-context-tone');
   const fastContextSummary = document.getElementById('fast-context-summary');
-
+  const contextBoxesContainer = document.getElementById('context-boxes-container'); 
+  
   // --- API Configuration ---
   const apiKey = "AIzaSyCSznfN9kAsUuDQe2zUDvvVfXxDH7ABxAs"; 
   const RECONSTRUCT_MODEL = 'gemini-2.5-flash-preview-09-2025';
-  const CONTEXT_MODEL = 'gemini-2.5-flash-preview-09-2025'; // Same model used for structured output
+  const CONTEXT_MODEL = 'gemini-2.5-flash-preview-09-2025'; 
 
   // --- State ---
   let lastReconstructedText = '';
   let lastOriginalFragment = '';
   let timelineInterval;
   let isTimelineRunning = false;
-  
-  // --- Timeline Logic ---
 
-  // Helper function to generate a random string for the scanning effect
+  // --- Modal Control Functions ---
+  function showModal() {
+      generationModal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden'; 
+  }
+
+  function hideModal() {
+      generationModal.classList.add('hidden');
+      document.body.style.overflow = '';
+  }
+  
+  // --- Core App Reset Logic ---
+  function fullAppResetAndHideModal() {
+      resetTimeline(); 
+      hideModal();
+      // Ensure the UI reverts to the initial search state
+      resultsSection.classList.add('hidden');
+      searchSection.classList.remove('hidden');
+      searchInput.value = ''; // Clear search field for a true new search
+      lastReconstructedText = '';
+      lastOriginalFragment = '';
+      searchInput.focus();
+  }
+  
+  // --- Manual Modal Close (Keep processing running) ---
+  function closeOnlyModal() {
+      hideModal();
+      // API calls continue in the background. Results section remains visible (or becomes visible)
+      // to the user immediately, allowing them to wait for the data.
+  }
+
+  // --- Timeline Logic ---
   function generateRandomString(length) {
       const characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+-=[]{}:"|\\,./<>?';
       let result = '';
@@ -551,32 +637,39 @@
       return result;
   }
   
-  // Starts the character randomization and indicator movement
-  function startTimeline() {
+  function startTimelineAndContextScan() {
       if (isTimelineRunning) return;
       isTimelineRunning = true;
       
+      // Make boxes visible
+      timelineBox.classList.remove('hidden');
+      contextBoxesContainer.classList.remove('hidden');
+
       timelineBox.classList.add('timeline-running');
       eraTimelineMarker.style.removeProperty('left'); 
       eraTimelineMarker.classList.remove('hidden');
 
-      // Set initial state
+      // Set initial state (scanning effect)
       timelineStartYear.textContent = '';
       timelineEndYear.textContent = '';
       eraGuessOutput.textContent = "SCANNING...";
       eraGuessOutput.classList.remove('text-green-400');
-      eraGuessOutput.classList.add('text-purple-400'); // Scanning color
+      eraGuessOutput.classList.add('text-purple-400'); 
 
-      // Start random character updates (50ms for high speed)
       function updateTimelineRunning() {
+        // Timeline years scanning
         timelineStartYear.textContent = generateRandomString(4);
         timelineEndYear.textContent = generateRandomString(4);
         eraGuessOutput.textContent = generateRandomString(6);
+        
+        // Context boxes scanning
+        fastContextSlang.innerHTML = `<li class="text-gray-400 font-mono">${generateRandomString(15)}</li>`;
+        fastContextTone.textContent = generateRandomString(30);
+        fastContextSummary.textContent = generateRandomString(60);
       }
       timelineInterval = setInterval(updateTimelineRunning, 50); 
   }
 
-  // Stops the character randomization and fixes the indicator to the target year
   function stopTimeline(targetYear) {
       if (!isTimelineRunning) return;
       isTimelineRunning = false;
@@ -587,12 +680,10 @@
       const startYear = 2000;
       const endYear = 2024;
       
-      // Calculate position
       const estimatedYear = parseInt(targetYear.match(/\d+/)?.[0] || '2012');
       const clampedYear = Math.max(startYear, Math.min(endYear, estimatedYear));
       const positionPercentage = ((clampedYear - startYear) / (endYear - startYear)) * 100;
       
-      // Update UI to final state
       timelineStartYear.textContent = startYear;
       timelineEndYear.textContent = endYear;
       eraTimelineMarker.style.left = `${positionPercentage}%`;
@@ -601,11 +692,16 @@
   function resetTimeline() {
       clearInterval(timelineInterval);
       isTimelineRunning = false;
+      
+      timelineBox.classList.add('hidden'); 
+      contextBoxesContainer.classList.add('hidden'); 
+
       timelineBox.classList.remove('timeline-running');
       timelineStartYear.textContent = '';
       timelineEndYear.textContent = '';
       eraTimelineMarker.style.removeProperty('left');
-      eraGuessOutput.textContent = 'Scanning...';
+      
+      eraGuessOutput.textContent = 'Awaiting Fragment...';
       eraGuessOutput.classList.remove('text-green-400');
       eraGuessOutput.classList.add('text-purple-400');
       
@@ -648,7 +744,7 @@
 
   /** Renders the fast context (JSON output) into the report section, including the timeline visualization. */
   function renderFastContext(data) {
-      // 1. Era Guess and Timeline
+      // 1. Era Guess and Timeline (STOPS SCAN)
       const yearText = data.era_year || '2012'; 
       stopTimeline(yearText); 
 
@@ -676,23 +772,18 @@
       fastContextSummary.textContent = data.artifact_summary || 'Artifact summary is unavailable.';
   }
 
-  // --- Step 2A: Fast Context (AI Only, JSON Output) ---
+  // --- Step 2A: Context (AI Only, JSON Output) - NO GOOGLE SEARCH ---
   async function callGeminiFastContext(originalFragment, reconstructedText) {
       if (!apiKey) {
           fastContextSummary.textContent = "Error: API Key is required.";
-          stopTimeline('2012'); // Stop scanning
+          stopTimeline('2012'); 
           return;
       }
       
-      // Update loading state for Fast Context
-      loadingMessage.textContent = "Determining Era and Analyzing Slang (Fast Context)...";
-      
-      // Start the visual scanning timeline effect (will stop when result is rendered)
-      startTimeline();
-      
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${CONTEXT_MODEL}:generateContent?key=${apiKey}`;
       
-      const systemPrompt = "You are an AI Linguist specializing in historical digital text. Analyze the provided original and reconstructed text. Your task is to provide an immediate, fast context report based solely on your internal knowledge. DO NOT use the Google Search tool. Your response MUST be a JSON object adhering strictly to the provided schema.";
+      // System prompt updated to reflect that it relies on internal knowledge only
+      const systemPrompt = "You are an AI Linguist specializing in historical digital text and contemporary slang. Analyze the provided text based solely on your internal knowledge. Provide your analysis in the strict JSON format requested below. DO NOT use external search tools.";
 
       const userQuery = `Analyze this digital artifact. Original Fragment: "${originalFragment}". Reconstructed Text: "${reconstructedText}". Please provide the following: 1. The most likely single year. 2. Definitions for all abbreviations or slang terms. 3. A single sentence analyzing the tone. 4. A paragraph summarizing the linguistic register and core social context.`;
       
@@ -701,6 +792,7 @@
           systemInstruction: {
               parts: [{ text: systemPrompt }]
           },
+          // REMOVED: tools: [{ "google_search": {} }], 
           generationConfig: {
               responseMimeType: "application/json",
               responseSchema: fastContextSchema
@@ -710,21 +802,58 @@
       try {
           const result = await resilientFetch(apiUrl, payload);
           
-          const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+          const candidate = result.candidates?.[0];
+          const jsonText = candidate?.content?.parts?.[0]?.text;
+          
+          // REMOVED: Source extraction logic (not needed without Google Search)
+
           if (jsonText) {
               const fastData = JSON.parse(jsonText);
               renderFastContext(fastData); 
           } else {
               fastContextSummary.textContent = 'Error: The AI did not return a valid JSON output.';
-              stopTimeline('2012'); // Stop the timeline on a default year if API fails to yield JSON
+              stopTimeline('2012'); 
           }
           
       } catch (error) {
-          fastContextSummary.textContent = `Error during fast context analysis: ${error.message}`;
-          stopTimeline('2012'); // Stop the timeline on a default year if API fails
+          fastContextSummary.textContent = `Error during context analysis: ${error.message}`;
+          stopTimeline('2012'); 
+          throw error; 
       }
   }
 
+  // --- Step 2B: Linguistic Modernization (Shashi Tharoorified Style) ---
+  async function callGeminiParaphrase(reconstructedText) {
+      if (!apiKey) {
+          paraphrasedOutput.value = "Error: API Key is required. Please check configuration.";
+          return;
+      }
+      
+      loadingMessage.textContent = "Translating to Shashi Tharoorified Academic Style...";
+      
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${RECONSTRUCT_MODEL}:generateContent?key=${apiKey}`;
+      
+      const systemPrompt = "You are a master rhetorician and linguistic maximalist, tasked with transforming informal digital text into a highly formal, verbose, and academic style, reminiscent of Shashi Tharoor. Employ complex, meandering sentence structures, esoteric vocabulary, and an elevated register. Eliminate all slang, contractions, and colloquialisms, prioritizing polysyllabic terminology and intellectual gravitas. Output ONLY the paraphrased text.";
+      
+      const userQuery = `Original Text to be rendered in Shashi Tharoorified style: "${reconstructedText}"`;
+
+      const payload = {
+          contents: [{ parts: [{ text: userQuery }] }],
+          systemInstruction: {
+              parts: [{ text: systemPrompt }]
+          },
+      };
+
+      try {
+          const result = await resilientFetch(apiUrl, payload);
+          const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: Could not complete paraphrase.';
+          paraphrasedOutput.value = text.trim();
+      } catch (error) {
+          paraphrasedOutput.value = `Error during Shashi Tharoorified paraphrasing: ${error.message}`;
+          throw error; // Propagate error up to Promise.all
+      }
+  }
+  
   // --- Resilient Fetch with Exponential Backoff (Unchanged) ---
   async function resilientFetch(url, payload, retries = 3, delay = 1000) {
       for (let i = 0; i < retries; i++) {
@@ -752,14 +881,19 @@
   async function callGeminiReconstruct(userQuery) {
       if (!apiKey) {
           reconstructedOutput.value = "Error: API Key not found. Please check your configuration.";
-          loaderSection.classList.add('hidden');
-          searchSection.classList.remove('hidden');
+          fullAppResetAndHideModal(); // Use full reset on critical config error
           return;
       }
 
       loadingMessage.textContent = "Reconstructing Fragment...";
-      reconstructedOutput.value = '';
-      lastOriginalFragment = userQuery; // Store original fragment for context call
+      lastOriginalFragment = userQuery; 
+
+      // STEP 1: Show results view and start all scanning effects immediately.
+      resultsSection.classList.remove('hidden');
+      startTimelineAndContextScan();
+      
+      reconstructedOutput.value = 'Data stream active... awaiting initial text reconstruction.';
+      paraphrasedOutput.value = 'While you await the reconstruction, here is a Shashi Tharoorified version of the core concept...'; // Reset placeholder
 
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${RECONSTRUCT_MODEL}:generateContent?key=${apiKey}`;
       
@@ -774,19 +908,30 @@
           const result = await resilientFetch(apiUrl, payload);
           const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: Could not extract reconstructed text from the API response.';
           
+          // STEP 2: Reconstruction complete. Fill the main box.
           lastReconstructedText = text.trim();
           reconstructedOutput.value = lastReconstructedText;
           
-          // --- NEW STEP: Call Fast Context after Reconstruction ---
+          // --- NEW SEQUENTIAL EXECUTION START ---
+          
+          // STEP 3 (A): Run Paraphrase FIRST (fills the modal box while waiting).
+          loadingMessage.textContent = "Reconstruction Complete. Generating Shashi Tharoorified Paraphrase...";
+          await callGeminiParaphrase(lastReconstructedText); 
+          
+          // STEP 3 (B): Run Context Analysis (updates timeline/context).
+          loadingMessage.textContent = "Paraphrase Complete. Starting Context Analysis...";
           await callGeminiFastContext(lastOriginalFragment, lastReconstructedText);
+          
+          // --- NEW SEQUENTIAL EXECUTION END ---
+          
+          // Only hide the modal once the final step is successful
+          hideModal();
 
       } catch (error) {
-          reconstructedOutput.value = `An error occurred during reconstruction: ${error.message}`;
-          resetTimeline(); 
-      } finally {
-          loaderSection.classList.add('hidden');
-          resultsSection.classList.remove('hidden');
-      }
+          reconstructedOutput.value = `A critical error occurred during processing: ${error.message}`;
+          // On API failure, revert to the search page immediately
+          fullAppResetAndHideModal(); 
+      } 
   }
 
   // --- Main Search Handler ---
@@ -794,10 +939,12 @@
     const query = searchInput.value.trim();
     if (query) {
       searchSection.classList.add('hidden');
-      resultsSection.classList.add('hidden');
-      loaderSection.classList.remove('hidden');
-      resetTimeline(); // Ensure everything starts fresh
-      callGeminiReconstruct(query);
+      resultsSection.classList.add('hidden'); 
+      
+      showModal(); 
+      resetTimeline(); 
+      
+      callGeminiReconstruct(query); 
     } else {
       searchInput.focus(); 
     }
@@ -809,17 +956,19 @@
     if (e.key==='Enter') handleSearch(); 
   });
   
-  newSearchButton.addEventListener('click', () => {
-      resetTimeline(); // Reset and clear all components
-      resultsSection.classList.add('hidden');
-      loaderSection.classList.add('hidden');
-      searchSection.classList.remove('hidden');
-      searchInput.value = '';
-      lastReconstructedText = '';
-      lastOriginalFragment = '';
-      searchInput.focus();
-  });
+  // NEW LOGIC for New Search Button
+  newSearchButton.addEventListener('click', fullAppResetAndHideModal);
   
+  // NEW LOGIC for Modal Close Button (X)
+  modalCloseButton.addEventListener('click', closeOnlyModal);
+
+  // Keyboard listener for Escape key to close modal
+  document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !generationModal.classList.contains('hidden')) {
+          closeOnlyModal(); // ONLY closes the modal, keeps the page state.
+      }
+  });
+
   // Start the background animation
   window.onload = function() {
     console.log("Chronos AI UI loaded.");
@@ -829,7 +978,7 @@
     eraGuessOutput.textContent = 'Awaiting Fragment...';
     eraGuessOutput.classList.remove('text-green-400');
     eraGuessOutput.classList.add('text-purple-400');
-    eraTimelineMarker.classList.add('hidden'); // Hide marker until scan starts
+    eraTimelineMarker.classList.add('hidden'); 
   }
 
 
