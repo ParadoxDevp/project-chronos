@@ -1,661 +1,593 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Chronos: Digital Time Machine & Translator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1000px;
-            width: 100%;
-            margin: 0 auto;
-        }
-        .section-header {
-            border-left: 5px solid #10b981; /* Emerald Green for Chronos */
-            padding-left: 12px;
-            color: #1f2937;
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Chronos AI — Holographic Era Snapshot</title>
+
+<!-- Tailwind CDN for convenience -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#030205;
+    --dim-purple: rgba(120,90,150,0.18); /* grid base */
+    --hover-glow: rgba(139,92,246,0.28); /* neon glow on hover */
+    --accent: #8b5cf6;
+    --card-bg: rgba(255,255,255,0.03);
+    --input-bg: rgba(0,0,0,0.45);
+  }
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    color:#efeefe;
+    overflow-x:hidden;
+  }
+
+  /* ---------- GRID CANVAS (Unchanged) ---------- */
+  #grid-canvas {
+    position:fixed;
+    inset:0;
+    z-index:0;
+    display:block;
+    background: radial-gradient(1200px 600px at 10% 20%, rgba(10,6,12,0.15), transparent 8%),
+                radial-gradient(1200px 700px at 90% 80%, rgba(20,10,30,0.12), transparent 8%);
+  }
+  .star-overlay{ 
+    position:fixed; inset:0; z-index:1; pointer-events:none; opacity:0.03; 
+    background-image: radial-gradient(rgba(255,255,255,0.65) 1px, transparent 1px); 
+    background-size:320px 320px; filter: blur(1px); 
+  }
+
+  /* ---------- UI LAYERS ---------- */
+  .content-layer{ 
+    position:relative; 
+    z-index:10; 
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding: 64px 20px 40px 20px;
+    box-sizing: border-box;
+  }
+  
+  /* Centered Main Title */
+  .hero-title{ 
+    font-size: clamp(3rem, 6vw, 4.5rem); 
+    font-weight:800; 
+    letter-spacing:-2px; 
+    background:linear-gradient(90deg,#f3eaff,#d7c9ff); 
+    -webkit-background-clip:text; 
+    background-clip:text; 
+    color:transparent; 
+    text-transform:uppercase;
+    margin: 0;
+    margin-bottom: 2rem;
+    text-align: center;
+    transform: translateY(-20px);
+    opacity: 0;
+    animation: fadeInSlide .8s cubic-bezier(.2,.9,.2,1) 0.2s forwards;
+  }
+
+  /* Search Input Style */
+  .main-search-wrap {
+    width: min(700px, 100%);
+    display: flex;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    transform: translateY(-20px);
+    opacity: 0;
+    animation: fadeInSlide .8s cubic-bezier(.2,.9,.2,1) 0.4s forwards;
+  }
+  .main-search-wrap input{
+    flex: 1;
+    padding: 16px 20px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    font-weight: 600;
+    background: var(--input-bg);
+    color: #fff; 
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .main-search-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.3);
+  }
+  .main-search-wrap button {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    height: 40px;
+    width: 40px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.1s;
+  }
+  .main-search-wrap button:hover {
+    background: #6d28d9;
+    transform: scale(1.05);
+  }
+  
+  /* Animations */
+  @keyframes fadeInSlide{
+    to{ opacity:1; transform:none; }
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 900px) {
+    .main-search-wrap {
+      width: min(500px, 100%);
+    }
+    .hero-title {
+      font-size: clamp(2.5rem, 10vw, 4rem); 
+    }
+  }
+
+  /* --- ADDED FOR LOADER AND RESULTS --- */
+  .hidden { display: none !important; }
+
+  .loader-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 180px;
+    height: 180px;
+    font-family: "Inter", sans-serif;
+    font-size: 1.2em;
+    font-weight: 300;
+    color: white;
+    border-radius: 50%;
+    background-color: transparent;
+    user-select: none;
+  }
+
+  .loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    background-color: transparent;
+    animation: loader-rotate 2s linear infinite;
+    z-index: 0;
+  }
+
+  @keyframes loader-rotate {
+    0% {
+      transform: rotate(90deg);
+      box-shadow:
+        0 10px 20px 0 #fff inset,
+        0 20px 30px 0 #ad5fff inset,
+        0 60px 60px 0 #471eec inset;
+    }
+    50% {
+      transform: rotate(270deg);
+      box-shadow:
+        0 10px 20px 0 #fff inset,
+        0 20px 10px 0 #d60a47 inset,
+        0 40px 60px 0 #311e80 inset;
+    }
+    100% {
+      transform: rotate(450deg);
+      box-shadow:
+        0 10px 20px 0 #fff inset,
+        0 20px 30px 0 #ad5fff inset,
+        0 60px 60px 0 #471eec inset;
+    }
+  }
+
+  .loader-letter {
+    display: inline-block;
+    opacity: 0.4;
+    transform: translateY(0);
+    animation: loader-letter-anim 2s infinite;
+    z-index: 1;
+    border-radius: 50ch;
+    border: none;
+  }
+
+  .loader-letter:nth-child(1) { animation-delay: 0s; }
+  .loader-letter:nth-child(2) { animation-delay: 0.1s; }
+  .loader-letter:nth-child(3) { animation-delay: 0.2s; }
+  .loader-letter:nth-child(4) { animation-delay: 0.3s; }
+  .loader-letter:nth-child(5) { animation-delay: 0.4s; }
+  .loader-letter:nth-child(6) { animation-delay: 0.5s; }
+  .loader-letter:nth-child(7) { animation-delay: 0.6s; }
+  .loader-letter:nth-child(8) { animation-delay: 0.7s; }
+  .loader-letter:nth-child(9) { animation-delay: 0.8s; }
+  .loader-letter:nth-child(10) { animation-delay: 0.9s; }
+
+  @keyframes loader-letter-anim {
+    0%,
+    100% {
+      opacity: 0.4;
+      transform: translateY(0);
+    }
+    20% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+    40% {
+      opacity: 0.7;
+      transform: translateY(0);
+    }
+  }
+
+  .action-button {
+    background-color: var(--accent);
+    color: white;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: background-color 0.3s, transform 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .action-button:hover:not(:disabled) {
+    background-color: #6d28d9;
+    transform: translateY(-2px);
+  }
+  .action-button:disabled {
+    background-color: #372f4b;
+    color: #8a82a3;
+    cursor: not-allowed;
+  }
+
+</style>
 </head>
 <body>
 
-    <div class="container bg-white p-8 rounded-xl shadow-2xl border border-gray-200">
-        <h1 class="text-4xl font-extrabold text-center text-green-700 mb-2 tracking-tight">
-            Project Chronos: Digital Time Machine
-        </h1>
-        <p class="text-center text-gray-500 mb-8">
-            Reconstruct, Date, Contextualize, and Translate Digital Artifacts.
-        </p>
+<!-- Grid canvas (Background) -->
+<canvas id="grid-canvas" aria-hidden="true"></canvas>
+<div class="star-overlay" aria-hidden="true"></div>
 
-        <!-- STEP 1: Input and Reconstruction -->
-        <h2 class="text-2xl font-bold section-header mb-4">Step 1 & 2: Decipher and Contextualize</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-            <div>
-                <label for="promptInput" class="block text-sm font-medium text-gray-700 mb-2">1A. Enter Fragmented Text:</label>
-                <textarea id="promptInput" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-inner focus:ring-green-500 focus:border-green-500 transition duration-150 ease-in-out placeholder-gray-400" placeholder="e.g., 'smh at the top 8 drama. ppl need to chill. g2g, ttyl.'"></textarea>
-            </div>
-            <div>
-                <label for="reconstructedOutput" class="block text-sm font-medium text-gray-700 mb-2 flex justify-between items-center">
-                    1B. Reconstructed Text: 
-                    <button id="ttsButton" class="text-xs bg-gray-200 text-gray-700 py-1 px-3 rounded-full hover:bg-gray-300 transition duration-150 ease-in-out disabled:opacity-50" disabled>
-                        ✨ Narrate Artifact
-                    </button>
-                </label>
-                <textarea id="reconstructedOutput" rows="4" readonly class="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-800 resize-none"></textarea>
-            </div>
-        </div>
+<!-- Main content layer -->
+<section id="search-section" class="content-layer">
+  <!-- Centered Title -->
+  <h1 class="hero-title">Chronos AI</h1>
+  
+  <!-- Centered Search Input -->
+  <div class="main-search-wrap" role="search">
+    <input 
+      id="main-search" 
+      placeholder="Ask about an era (e.g., '1998', 'The Renaissance'), or a topic in time..." 
+      aria-label="Search for an era or topic"
+    >
+    <button id="main-go" aria-label="Explore">
+      <!-- Send Icon (Lucide-react style) -->
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send">
+        <path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/>
+      </svg>
+    </button>
+  </div>
+</section>
 
-        <div class="flex flex-col md:flex-row gap-4 mb-8">
-            <button id="reconstructButton" class="w-full md:w-1/2 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-150 ease-in-out shadow-lg disabled:opacity-50">
-                Step 1: Reconstruct Text
-            </button>
-            <button id="contextButton" class="w-full md:w-1/2 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-150 ease-in-out shadow-lg disabled:opacity-50" disabled>
-                Step 2: Determine Era & Context
-            </button>
-        </div>
-        
-        <!-- STEP 3: Linguistic Modernization -->
-        <h2 class="text-2xl font-bold section-header mb-4">Step 3: Linguistic Modernization</h2>
-        <div class="mb-4">
-            <label for="paraphrasedOutput" class="block text-sm font-medium text-gray-700 mb-2">3A. Modern/Formal Translation:</label>
-            <textarea id="paraphrasedOutput" rows="3" readonly class="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-800 resize-none"></textarea>
-        </div>
-        <button id="paraphraseButton" class="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition duration-150 ease-in-out shadow-lg disabled:opacity-50 mb-8" disabled>
-            ✨ Translate to Modern Academic Style
-        </button>
-
-        <!-- Loading Indicator -->
-        <div id="loadingIndicator" class="hidden mt-4 text-center">
-            <svg class="animate-spin h-6 w-6 mr-3 inline text-green-600" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span id="loadingMessage" class="text-green-600 font-medium">Processing...</span>
-        </div>
-
-        <!-- Step 2 (Contextual Report Output) -->
-        <div id="contextReport" class="mt-8 hidden p-6 bg-gray-50 rounded-xl border border-gray-200 shadow-xl">
-            <h2 class="text-2xl font-bold section-header mb-6">Digital Artifact Report</h2>
-            
-            <!-- Era Guess & Timeline -->
-            <div class="mb-8 p-4 bg-white rounded-lg shadow-md border border-gray-100">
-                <h3 class="text-xl font-bold text-gray-700 mb-3">
-                    <span class="text-green-600">ERA GUESS:</span> <span id="eraGuessOutput" class="font-extrabold tracking-wide">...</span>
-                </h3>
-                <p class="text-sm text-gray-500 mb-3">Visualizing the probable time of origin on the digital timeline.</p>
-                <div class="h-2 w-full bg-gray-200 rounded-full relative">
-                    <div id="eraTimelineMarker" class="absolute h-4 w-4 bg-red-500 rounded-full transform -translate-y-1/2 -translate-x-1/2 shadow-lg" style="left: 0%;"></div>
-                    <div class="absolute text-xs text-gray-500 top-3 left-0">2000</div>
-                    <div class="absolute text-xs text-gray-500 top-3 right-0">2024</div>
-                </div>
-            </div>
-
-            <!-- Cultural Insights -->
-            <h3 class="text-xl font-bold section-header mb-4">Era Insights: Top Cultural Facts</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div class="p-4 bg-white rounded-lg shadow-md border-t-4 border-t-pink-500">
-                    <div class="font-bold text-lg mb-1 text-pink-600">📰 Major News / Events</div>
-                    <ul id="newsFacts" class="list-disc list-inside text-gray-700 space-y-1 text-sm pl-2"></ul>
-                </div>
-                <div class="p-4 bg-white rounded-lg shadow-md border-t-4 border-t-yellow-500">
-                    <div class="font-bold text-lg mb-1 text-yellow-600">🎧 Popular Music / Trends</div>
-                    <ul id="musicFacts" class="list-disc list-inside text-gray-700 space-y-1 text-sm pl-2"></ul>
-                </div>
-                <div class="p-4 bg-white rounded-lg shadow-md border-t-4 border-t-blue-500">
-                    <div class="font-bold text-lg mb-1 text-blue-600">🌐 Web Sites / Digital Trends</div>
-                    <ul id="siteFacts" class="list-disc list-inside text-gray-700 space-y-1 text-sm pl-2"></ul>
-                </div>
-            </div>
-
-            <!-- Text-Specific Analysis -->
-            <h3 class="text-xl font-bold section-header mb-4">Artifact-Specific Analysis</h3>
-            <div id="analysisOutput" class="p-4 bg-white rounded-lg border text-gray-700 whitespace-pre-wrap shadow-inner mb-8"></div>
-            
-            <!-- Grounding Sources -->
-            <h3 class="text-lg font-semibold text-gray-700 mb-2">Grounding Sources:</h3>
-            <ul id="sourcesList" class="space-y-2 list-none p-0"></ul>
-        </div>
+<!-- Loader Section -->
+<section id="loader-section" class="content-layer hidden flex-col">
+    <div class="loader-wrapper">
+        <span class="loader-letter">G</span>
+        <span class="loader-letter">e</span>
+        <span class="loader-letter">n</span>
+        <span class="loader-letter">e</span>
+        <span class="loader-letter">r</span>
+        <span class="loader-letter">a</span>
+        <span class="loader-letter">t</span>
+        <span class="loader-letter">i</span>
+        <span class="loader-letter">n</span>
+        <span class="loader-letter">g</span>
+        <div class="loader"></div>
     </div>
+    <p id="loading-message" class="mt-8 text-lg text-purple-300 animate-pulse"></p>
+</section>
 
-    <!-- 1. Load the Configuration File (contains the API Key) -->
-    <script src="config.js"></script>
+<!-- Results View -->
+<section id="results-section" class="w-full max-w-4xl mx-auto p-8 hidden relative z-10">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-pink-400">Reconstruction</h2>
+        <button id="new-search-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">New Search</button>
+    </div>
+    <textarea id="reconstructed-output" readonly class="w-full h-60 p-4 rounded-lg bg-black bg-opacity-40 border border-purple-800/50 text-gray-200 focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none text-lg leading-relaxed shadow-lg"></textarea>
+    <div class="flex items-center space-x-4 mt-4">
+        <button id="context-button" class="action-button">Get Context</button>
+        <button id="paraphrase-button" class="action-button">Paraphrase</button>
+        <button id="tts-button" class="action-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            Speak
+        </button>
+    </div>
+    <div id="context-report" class="mt-8 hidden">
+        <!-- Context report will be rendered here -->
+    </div>
+</section>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // UI Elements
-            const promptInput = document.getElementById('promptInput');
-            const reconstructButton = document.getElementById('reconstructButton');
-            const contextButton = document.getElementById('contextButton');
-            const paraphraseButton = document.getElementById('paraphraseButton');
-            const ttsButton = document.getElementById('ttsButton');
-            const reconstructedOutput = document.getElementById('reconstructedOutput');
-            const paraphrasedOutput = document.getElementById('paraphrasedOutput');
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            const loadingMessage = document.getElementById('loadingMessage');
-            const contextReport = document.getElementById('contextReport');
-            const eraGuessOutput = document.getElementById('eraGuessOutput');
-            const eraTimelineMarker = document.getElementById('eraTimelineMarker');
-            const newsFacts = document.getElementById('newsFacts');
-            const musicFacts = document.getElementById('musicFacts');
-            const siteFacts = document.getElementById('siteFacts');
-            const analysisOutput = document.getElementById('analysisOutput');
-            const sourcesList = document.getElementById('sourcesList');
+<script src="config.js"></script>
+<script>
+/* ============================
+   GRID WAVE BACKGROUND (canvas) - (UNMODIFIED)
+   ============================ */
+(function(){
+  const canvas = document.getElementById('grid-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d', { alpha: true });
+  let W = innerWidth, H = innerHeight;
+  const DPR = Math.max(1, devicePixelRatio || 1);
 
-            let lastOriginalFragment = '';
-            let lastReconstructedText = '';
-            let audioContext;
+  function resize(){
+    W = innerWidth; H = innerHeight;
+    canvas.width = Math.max(800, W) * DPR;
+    canvas.height = Math.max(600, H) * DPR;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    buildGrid();
+  }
+  
+  // grid config
+  let nodes = [];
+  function buildGrid(){
+    nodes = [];
+    const spacingX = Math.max(40, W / 36);
+    const spacingY = Math.max(40, H / 18);
+    const colsN = Math.ceil(W / spacingX) + 2;
+    const rowsN = Math.ceil(H / spacingY) + 2;
+    for (let i=0;i<colsN;i++){
+      const col = [];
+      for (let j=0;j<rowsN;j++){
+        const x = (i - 1) * spacingX;
+        const y = (j - 1) * spacingY;
+        col.push({ x, y, baseY: y, phase: Math.random()*Math.PI*2 });
+      }
+      nodes.push(col);
+    }
+  }
+  
+  // pointer for parallax and glow
+  const pointer = { x: -9999, y: -9999 };
+  window.addEventListener('mousemove', (e) => { pointer.x = e.clientX; pointer.y = e.clientY; });
+  window.addEventListener('mouseleave', () => { pointer.x = -9999; pointer.y = -9999; });
 
-            // --- Event Listeners ---
-            reconstructButton.addEventListener('click', () => {
-                const prompt = promptInput.value.trim();
-                if (prompt) {
-                    contextButton.disabled = true;
-                    paraphraseButton.disabled = true;
-                    ttsButton.disabled = true;
-                    contextReport.classList.add('hidden');
-                    paraphrasedOutput.value = '';
-                    callGeminiReconstruct(prompt);
-                } else {
-                    reconstructedOutput.value = "Please enter some text to reconstruct.";
-                }
-            });
+  let tStart = performance.now();
 
-            contextButton.addEventListener('click', () => {
-                if (lastOriginalFragment && lastReconstructedText) {
-                    callGeminiContext(lastOriginalFragment, lastReconstructedText);
-                }
-            });
-            
-            paraphraseButton.addEventListener('click', () => {
-                if (lastReconstructedText) {
-                    callGeminiParaphrase(lastReconstructedText);
-                }
-            });
+  function draw(){
+    if (!ctx) return;
+    ctx.clearRect(0,0,W,H);
 
-            ttsButton.addEventListener('click', () => {
-                if (lastReconstructedText) {
-                    callGeminiTTS(lastReconstructedText);
-                }
-            });
+    // dark background fill subtle
+    const bgG = ctx.createLinearGradient(0,0,0,H);
+    bgG.addColorStop(0, 'rgba(6,6,10,1)');
+    bgG.addColorStop(1, 'rgba(3,2,6,1)');
+    ctx.fillStyle = bgG;
+    ctx.fillRect(0,0,W,H);
 
-            // --- API Configuration ---
-            // 2. The 'apiKey' is now expected to be provided by 'config.js'
-            // In the Canvas environment, if apiKey is undefined, it is still automatically injected.
-            // When running locally, 'config.js' will define the global 'GEMINI_API_KEY'.
-            const apiKey = typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : '';
-            
-            if (!apiKey && !window.__app_id) {
-                // Display error message only when running locally (no canvas environment)
-                console.error("API Key not found. Please create 'config.js' and set GEMINI_API_KEY.");
-            }
+    // compute wave amplitude based on time and pointer proximity
+    const now = performance.now();
+    const elapsed = (now - tStart) / 1000;
+    const globalAmp = 8; // base amplitude of waves
+    
+    // dynamic amplitude near pointer
+    for (let i=0;i<nodes.length;i++){
+      for (let j=0;j<nodes[i].length;j++){
+        const n = nodes[i][j];
+        // have a gentle wave across x and time
+        const wave = Math.sin((n.x*0.002 + elapsed*0.9) + n.phase) * Math.cos((n.y*0.002 + elapsed*0.6) + n.phase);
+        // pointer influence (distance)
+        const dx = pointer.x - n.x;
+        const dy = pointer.y - n.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        const influence = Math.max(0, 1 - (d / 240)); // influence radius ~240px
+        n.y = n.baseY + wave * (globalAmp + 18*influence) - influence * 18; // combined
+      }
+    }
 
-            const RECONSTRUCT_MODEL = 'gemini-2.5-flash-preview-05-20';
-            const CONTEXT_MODEL = 'gemini-2.5-flash-preview-05-20'; 
-            const TTS_MODEL = 'gemini-2.5-flash-preview-tts';
-            
-            // --- TTS Utility Functions (Required for PCM conversion) ---
+    // draw horizontal polylines (rows)
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(110,84,140,0.14)';
+    for (let j=0;j<nodes[0].length;j++){
+      ctx.beginPath();
+      for (let i=0;i<nodes.length;i++){
+        const n = nodes[i][j];
+        if (i === 0) ctx.moveTo(n.x, n.y);
+        else ctx.lineTo(n.x, n.y);
+      }
+      ctx.stroke();
+    }
 
-            function writeString(view, offset, string) {
-                for (let i = 0; i < string.length; i++) {
-                    view.setUint8(offset + i, string.charCodeAt(i));
-                }
-            }
+    // draw vertical polylines (columns)
+    for (let i=0;i<nodes.length;i++){
+      ctx.beginPath();
+      for (let j=0;j<nodes[i].length;j++){
+        const n = nodes[i][j];
+        if (j === 0) ctx.moveTo(n.x, n.y);
+        else ctx.lineTo(n.x, n.y);
+      }
+      ctx.stroke();
+    }
 
-            function writeUint16(view, offset, data) {
-                view.setUint16(offset, data, true); // true for little-endian
-            }
+    // glow highlight: draw rings of brighter neon where pointer near
+    if (pointer.x > -1000){
+      const radius = 220;
+      const grd = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, radius);
+      grd.addColorStop(0, 'rgba(139,92,246,0.26)');
+      grd.addColorStop(0.2, 'rgba(139,92,246,0.14)');
+      grd.addColorStop(1, 'rgba(80,40,130,0)');
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(pointer.x, pointer.y, radius, 0, Math.PI*2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
 
-            function writeUint32(view, offset, data) {
-                view.setUint32(offset, data, true); // true for little-endian
-            }
-            
-            // Function to convert Base64 string to ArrayBuffer
-            function base64ToArrayBuffer(base64) {
-                const binaryString = atob(base64);
-                const len = binaryString.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                return bytes.buffer;
-            }
+    // draw brighter line segments near pointer for neon effect
+    const glowRadius = 160;
+    for (let i=0;i<nodes.length;i++){
+      for (let j=0;j<nodes[i].length;j++){
+        const n = nodes[i][j];
+        const dx = pointer.x - n.x;
+        const dy = pointer.y - n.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < glowRadius){
+          const alpha = (1 - d / glowRadius) * 0.9;
+          // draw small luminous point
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(200,170,255,${Math.min(0.35, alpha*0.28)})`;
+          ctx.arc(n.x, n.y, 1.4 + alpha*2.8, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+    }
 
-            // Function to convert PCM audio data to WAV format
-            function pcmToWav(pcm16, sampleRate = 16000) {
-                const buffer = new ArrayBuffer(44 + pcm16.byteLength);
-                const view = new DataView(buffer);
-                
-                let offset = 0;
-                
-                // RIFF chunk
-                writeString(view, offset, 'RIFF'); offset += 4;
-                writeUint32(view, offset, 36 + pcm16.byteLength); offset += 4; // Total size
-                writeString(view, offset, 'WAVE'); offset += 4;
+    requestAnimationFrame(draw);
+  }
+  
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
 
-                // FMT chunk
-                writeString(view, offset, 'fmt '); offset += 4;
-                writeUint32(view, offset, 16); offset += 4; // Subchunk size (16 for PCM)
-                writeUint16(view, offset, 1); offset += 2; // Audio format (1 for PCM)
-                writeUint16(view, offset, 1); offset += 2; // Number of channels (1)
-                writeUint32(view, offset, sampleRate); offset += 4; // Sample rate
-                writeUint32(view, offset, sampleRate * 2); offset += 4; // Byte rate (SampleRate * NumChannels * BitsPerSample/8)
-                writeUint16(view, offset, 2); offset += 2; // Block align (NumChannels * BitsPerSample/8)
-                writeUint16(view, offset, 16); offset += 2; // Bits per sample (16)
-
-                // DATA chunk
-                writeString(view, offset, 'data'); offset += 4;
-                writeUint32(view, offset, pcm16.byteLength); offset += 4; // Data size
-
-                // Write PCM data
-                const pcmBytes = new Uint8Array(buffer, 44);
-                pcmBytes.set(new Uint8Array(pcm16.buffer));
-
-                return new Blob([view], { type: 'audio/wav' });
-            }
-
-            /** Utility function for exponential backoff and fetch */
-            async function resilientFetch(apiUrl, payload, maxRetries = 5, attempt = 0) {
-                while (attempt < maxRetries) {
-                    try {
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        if (response.ok) {
-                            return await response.json();
-                        } else if (response.status === 429) {
-                            const delay = Math.pow(2, attempt) * 1000 + (Math.random() * 1000);
-                            console.warn(`Rate limit encountered. Retrying in ${delay / 1000} seconds...`);
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                            attempt++;
-                        } else {
-                            const errorBody = await response.json();
-                            throw new Error(`API Error (${response.status}): ${errorBody.error?.message || 'Unknown error'}`);
-                        }
-                    } catch (error) {
-                        if (error.message.startsWith('API Error')) {
-                            throw error; 
-                        }
-                        if (attempt === maxRetries - 1) {
-                            throw new Error(`Network Error after ${maxRetries} attempts: ${error.message}`);
-                        }
-                        const delay = Math.pow(2, attempt) * 1000 + (Math.random() * 1000);
-                        console.warn(`Network failure. Retrying in ${delay / 1000} seconds...`);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        attempt++;
-                    }
-                }
-                throw new Error("Failed to get a response after multiple retries due to persistent issues.");
-            }
-
-            /** Parses the model's text output into a structured object based on custom delimiters. */
-            function parseStructuredMarkdown(markdown) {
-                const data = { 
-                    era: 'Unknown Era', 
-                    news: [], 
-                    music: [], 
-                    sites: [],
-                    analysis: 'Parsing Error: Could not find analysis section.', 
-                    sources: [] 
-                };
-                
-                // 1. Extract ERA GUESS
-                const eraMatch = markdown.match(/##ERA_GUESS##\s*([\s\S]*?)(?=\n##CULTURAL_NEWS##|$)/i);
-                if (eraMatch && eraMatch[1]) {
-                    data.era = eraMatch[1].trim();
-                }
-
-                // 2. Extract CULTURAL FACTS (News, Music, Sites)
-                const culturalFacts = {
-                    '##CULTURAL_NEWS##': data.news,
-                    '##CULTURAL_MUSIC##': data.music,
-                    '##CULTURAL_SITE##': data.sites
-                };
-
-                for (const delimiter in culturalFacts) {
-                    // Use matchAll for repeating elements
-                    const factMatches = markdown.matchAll(new RegExp(`${delimiter}\\s*([^\n]*)`, 'gi'));
-                    for (const match of factMatches) {
-                        const factText = match[1].trim();
-                        if (factText) {
-                            culturalFacts[delimiter].push(factText);
-                        }
-                    }
-                }
-
-                // 3. Extract Analysis Block
-                const analysisMatch = markdown.match(/##ANALYSIS##\s*([\s\S]*?)(?=\n##SOURCE##|$)/i);
-                if (analysisMatch && analysisMatch[1]) {
-                    data.analysis = analysisMatch[1].trim();
-                }
-                
-                // 4. Extract Sources List
-                const sourceMatches = markdown.matchAll(/##SOURCE##\s*([^|]*?)\s*\|\s*(.*)/gi);
-                for (const match of sourceMatches) {
-                    const title = match[1].trim();
-                    const url = match[2].trim();
-                    if (title && url) {
-                        data.sources.push({ title, url });
-                    }
-                }
-
-                return data;
-            }
+})();
 
 
-            // --- Step 1: Text Reconstruction (AI Only) ---
-            async function callGeminiReconstruct(userQuery) {
-                if (!apiKey) {
-                    reconstructedOutput.value = "Error: API Key is required. Please check 'config.js'.";
-                    return;
-                }
+/* ============================
+   CHRONOS AI - INTERACTIONS
+   ============================ */
+(function(){
+  // --- DOM Elements ---
+  const searchSection = document.getElementById('search-section');
+  const loaderSection = document.getElementById('loader-section');
+  const resultsSection = document.getElementById('results-section');
+  
+  const searchInput = document.getElementById('main-search');
+  const searchButton = document.getElementById('main-go');
+  const loadingMessage = document.getElementById('loading-message');
 
-                loadingMessage.textContent = "Reconstructing Fragment...";
-                reconstructButton.disabled = true;
-                contextButton.disabled = true;
-                paraphraseButton.disabled = true;
-                ttsButton.disabled = true;
-                loadingIndicator.classList.remove('hidden');
-                reconstructedOutput.value = '';
-                contextReport.classList.add('hidden');
+  const reconstructedOutput = document.getElementById('reconstructed-output');
+  const contextReport = document.getElementById('context-report');
+  
+  const contextButton = document.getElementById('context-button');
+  const paraphraseButton = document.getElementById('paraphrase-button');
+  const ttsButton = document.getElementById('tts-button');
+  const newSearchButton = document.getElementById('new-search-button');
 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${RECONSTRUCT_MODEL}:generateContent?key=${apiKey}`;
-                
-                const systemPrompt = "You are a text reconstruction expert. Your task is to take a fragmented or obscured digital text and provide its fully reconstructed, clear, and complete meaning. **You must only output the reconstructed text and nothing else.** Do not include commentary, labels (like 'Reconstructed Text:'), or source information.";
+  // --- API Configuration ---
+  const apiKey = typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : ""; // Fetches API key from config.js
+  const RECONSTRUCT_MODEL = 'gemini-2.5-flash-preview-09-2025';
 
-                const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
-                };
+  // --- State ---
+  let lastOriginalFragment = '';
+  let lastReconstructedText = '';
 
-                try {
-                    const result = await resilientFetch(apiUrl, payload);
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: Could not extract reconstructed text.';
-                    
-                    lastOriginalFragment = userQuery;
-                    lastReconstructedText = text.trim();
-                    reconstructedOutput.value = lastReconstructedText;
-                    
-                    contextButton.disabled = false;
-                    paraphraseButton.disabled = false;
-                    ttsButton.disabled = false;
-                } catch (error) {
-                    reconstructedOutput.value = error.message;
-                    contextButton.disabled = true;
-                    paraphraseButton.disabled = true;
-                    ttsButton.disabled = true;
-                } finally {
-                    reconstructButton.disabled = false;
-                    loadingIndicator.classList.add('hidden');
-                }
-            }
+  // --- Resilient Fetch with Exponential Backoff ---
+  async function resilientFetch(url, payload, retries = 3, delay = 1000) {
+      for (let i = 0; i < retries; i++) {
+          try {
+              const response = await fetch(url, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+              });
+              if (!response.ok) {
+                  const errorBody = await response.json();
+                  throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorBody?.error?.message || 'Unknown error'}`);
+              }
+              return await response.json();
+          } catch (error) {
+              if (i === retries - 1) throw error;
+              await new Promise(resolve => setTimeout(resolve, delay));
+              delay *= 2; // Exponential backoff
+          }
+      }
+  }
 
-            // --- Step 2: Contextual Search (AI + Search) ---
-            async function callGeminiContext(originalFragment, reconstructedText) {
-                if (!apiKey) {
-                    analysisOutput.value = "Error: API Key is required. Please check 'config.js'.";
-                    return;
-                }
-                
-                loadingMessage.textContent = "Determining Era and Finding Cultural Context...";
-                reconstructButton.disabled = true;
-                contextButton.disabled = true;
-                paraphraseButton.disabled = true;
-                ttsButton.disabled = true;
-                loadingIndicator.classList.remove('hidden');
-                contextReport.classList.add('hidden');
-                
-                // Reset outputs before search
-                eraGuessOutput.textContent = '...';
-                newsFacts.innerHTML = '';
-                musicFacts.innerHTML = '';
-                siteFacts.innerHTML = '';
-                analysisOutput.textContent = 'Searching...';
-                sourcesList.innerHTML = '';
+  // --- Step 1: Text Reconstruction (AI Only) ---
+  async function callGeminiReconstruct(userQuery) {
+      if (!apiKey) {
+          alert("Error: API Key not found. Please create 'config.js' and set your GEMINI_API_KEY.");
+          // Reset UI
+          loaderSection.classList.add('hidden');
+          searchSection.classList.remove('hidden');
+          return;
+      }
 
+      loadingMessage.textContent = "Reconstructing Fragment...";
+      contextButton.disabled = true;
+      paraphraseButton.disabled = true;
+      ttsButton.disabled = true;
+      reconstructedOutput.value = '';
+      contextReport.classList.add('hidden');
 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${CONTEXT_MODEL}:generateContent?key=${apiKey}`;
-                
-                const userQuery = `Using the original fragment: "${originalFragment}" and the reconstructed text: "${reconstructedText}", act as the 'Project Chronos' AI Archaeologist. Your goal is to determine the likely era of this digital artifact and provide surrounding cultural context.
-                
-                1. **ERA GUESS:** First, estimate the most likely year or era this text is from based on the slang (e.g., 'smh', 'top 8', 'g2g', 'ttyl').
-                2. **ERA INSIGHTS:** Use the Google Search tool to find and list 2-3 top news events, 2-3 popular songs/artists, and 2-3 major websites or digital trends (not including the ones mentioned in the text) from the estimated era.
-                3. **ARTIFACT ANALYSIS:** Provide a detailed, paragraph-long analysis explaining the specific slang and the artifact's message.
-                4. **STRICTLY** output the result using the following delimited format. Do not include any other commentary, introduction, or text outside of these sections:
-                
-                ##ERA_GUESS## [Estimated Year or Era, e.g., '2008-2012]
-                ##CULTURAL_NEWS## [News Fact 1]
-                ##CULTURAL_NEWS## [News Fact 2]
-                ##CULTURAL_MUSIC## [Music Fact 1]
-                ##CULTURAL_MUSIC## [Music Fact 2]
-                ##CULTURAL_SITE## [Website/Trend Fact 1]
-                ##CULTURAL_SITE## [Website/Trend Fact 2]
-                ##ANALYSIS## [The detailed paragraph analysis of the artifact's specific message]
-                ##SOURCE## [Title of Source 1] | https://1source.net/
-                ##SOURCE## [Title of Source 2] | https://en.wikipedia.org/wiki/Source_2`;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${RECONSTRUCT_MODEL}:generateContent?key=${apiKey}`;
+      
+      const systemPrompt = "You are a text reconstruction expert. Your task is to take a fragmented or obscured digital text and provide its fully reconstructed, clear, and complete meaning. **You must only output the reconstructed text and nothing else.** Do not include commentary, labels (like 'Reconstructed Text:'), or source information.";
 
-                const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    tools: [{ "google_search": {} }],
-                };
+      const payload = {
+          contents: [{ parts: [{ text: userQuery }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+      };
 
-                try {
-                    const result = await resilientFetch(apiUrl, payload);
-                    
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (text) {
-                        const parsedData = parseStructuredMarkdown(text);
-                        renderContextReport(parsedData);
-                    } else {
-                        analysisOutput.textContent = 'Error: The AI did not return any text output.';
-                    }
-                } catch (error) {
-                    analysisOutput.textContent = `Error during context search: ${error.message}`;
-                    sourcesList.innerHTML = '';
-                } finally {
-                    reconstructButton.disabled = false;
-                    contextButton.disabled = false;
-                    paraphraseButton.disabled = false;
-                    ttsButton.disabled = false;
-                    loadingIndicator.classList.add('hidden');
-                    contextReport.classList.remove('hidden');
-                }
-            }
-            
-            // --- Step 3: Linguistic Modernization (AI Only) ---
-            async function callGeminiParaphrase(reconstructedText) {
-                if (!apiKey) {
-                    paraphrasedOutput.value = "Error: API Key is required. Please check 'config.js'.";
-                    return;
-                }
-                
-                loadingMessage.textContent = "Translating to Modern Academic Style...";
-                reconstructButton.disabled = true;
-                contextButton.disabled = true;
-                paraphraseButton.disabled = true;
-                ttsButton.disabled = true;
-                loadingIndicator.classList.remove('hidden');
-                paraphrasedOutput.value = '';
+      try {
+          const result = await resilientFetch(apiUrl, payload);
+          const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: Could not extract reconstructed text from the API response.';
+          
+          lastOriginalFragment = userQuery;
+          lastReconstructedText = text.trim();
+          reconstructedOutput.value = lastReconstructedText;
+          
+          contextButton.disabled = false;
+          paraphraseButton.disabled = false;
+          ttsButton.disabled = false;
+      } catch (error) {
+          reconstructedOutput.value = `An error occurred: ${error.message}`;
+          contextButton.disabled = true;
+          paraphraseButton.disabled = true;
+          ttsButton.disabled = true;
+      } finally {
+          loaderSection.classList.add('hidden');
+          resultsSection.classList.remove('hidden');
+      }
+  }
 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${RECONSTRUCT_MODEL}:generateContent?key=${apiKey}`;
-                
-                const systemPrompt = "You are a professional academic translator. Your task is to take a piece of colloquial or informal text and rewrite it in a formal, high-register academic style. Focus on eliminating slang and abbreviations, and using complex sentence structures and professional vocabulary. Output only the paraphrased text.";
-                
-                const userQuery = `Original Text: "${reconstructedText}"`;
+  // --- Main Search Handler ---
+  function handleSearch(){
+    const query = searchInput.value.trim();
+    if (query) {
+      searchSection.classList.add('hidden');
+      resultsSection.classList.add('hidden');
+      loaderSection.classList.remove('hidden');
+      callGeminiReconstruct(query);
+    } else {
+      searchInput.focus(); 
+    }
+  }
 
-                const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
-                };
+  // --- Event Listeners ---
+  searchButton.addEventListener('click', handleSearch);
+  searchInput.addEventListener('keypress', (e)=>{ 
+    if (e.key==='Enter') handleSearch(); 
+  });
+  
+  newSearchButton.addEventListener('click', () => {
+      resultsSection.classList.add('hidden');
+      loaderSection.classList.add('hidden');
+      searchSection.classList.remove('hidden');
+      searchInput.value = '';
+      searchInput.focus();
+  });
 
-                try {
-                    const result = await resilientFetch(apiUrl, payload);
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: Could not complete paraphrase.';
-                    paraphrasedOutput.value = text.trim();
-                } catch (error) {
-                    paraphrasedOutput.value = `Error during paraphrasing: ${error.message}`;
-                } finally {
-                    reconstructButton.disabled = false;
-                    contextButton.disabled = false;
-                    paraphraseButton.disabled = false;
-                    ttsButton.disabled = false;
-                    loadingIndicator.classList.add('hidden');
-                }
-            }
-
-            // --- TTS Implementation ---
-            async function callGeminiTTS(textToSpeak) {
-                if (!apiKey) {
-                    ttsButton.textContent = 'TTS Failed (Missing Key)';
-                    setTimeout(() => {
-                        ttsButton.textContent = '✨ Narrate Artifact';
-                        ttsButton.disabled = false;
-                    }, 2000);
-                    return;
-                }
-
-                ttsButton.disabled = true;
-                ttsButton.textContent = 'Loading Audio...';
-                
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent?key=${apiKey}`;
-                
-                const payload = {
-                    contents: [{
-                        parts: [{ text: `Say in a clear, informative voice: "${textToSpeak}"` }]
-                    }],
-                    generationConfig: {
-                        responseModalities: ["AUDIO"],
-                        speechConfig: {
-                            voiceConfig: {
-                                // Using Charon voice for an informative/historian tone
-                                prebuiltVoiceConfig: { voiceName: "Charon" } 
-                            }
-                        }
-                    },
-                    model: TTS_MODEL
-                };
-
-                try {
-                    const result = await resilientFetch(apiUrl, payload);
-                    
-                    const part = result?.candidates?.[0]?.content?.parts?.[0];
-                    const audioData = part?.inlineData?.data;
-                    const mimeType = part?.inlineData?.mimeType;
-
-                    if (audioData && mimeType && mimeType.startsWith("audio/")) {
-                        // The mimeType contains the sample rate (e.g., audio/L16;rate=16000)
-                        const rateMatch = mimeType.match(/rate=(\d+)/);
-                        const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 16000;
-                        
-                        const pcmData = base64ToArrayBuffer(audioData);
-                        // API returns signed PCM16 audio data.
-                        const pcm16 = new Int16Array(pcmData);
-                        const wavBlob = pcmToWav(pcm16, sampleRate);
-                        const audioUrl = URL.createObjectURL(wavBlob);
-                        
-                        // Play the audio
-                        if (!audioContext) {
-                            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        }
-                        const audio = new Audio(audioUrl);
-                        
-                        audio.addEventListener('play', () => {
-                            ttsButton.textContent = '🔊 Playing...';
-                        });
-                        audio.addEventListener('ended', () => {
-                            ttsButton.textContent = '✨ Narrate Artifact';
-                            ttsButton.disabled = false;
-                        });
-
-                        audio.play().catch(e => {
-                            console.error("Audio playback failed:", e);
-                            ttsButton.textContent = 'Error playing audio.';
-                        });
-
-                    } else {
-                        throw new Error("TTS failed or returned invalid audio data.");
-                    }
-                } catch (error) {
-                    console.error("TTS API Error:", error);
-                    ttsButton.textContent = 'TTS Failed';
-                    // Re-enable button on error
-                    setTimeout(() => {
-                        ttsButton.textContent = '✨ Narrate Artifact';
-                        ttsButton.disabled = false;
-                    }, 2000);
-                }
-            }
-
-
-            /** Renders the structured data into the report section, including the timeline visualization. */
-            function renderContextReport(data) {
-                // ERA GUESS and Timeline
-                eraGuessOutput.textContent = data.era;
-                
-                const yearMatch = data.era.match(/\b(20\d{2})\b/);
-                let estimatedYear = yearMatch ? parseInt(yearMatch[1]) : 2012; 
-                
-                // Simple static timeline visualization logic (2000-2024 range)
-                const startYear = 2000;
-                const endYear = 2024;
-                const clampedYear = Math.max(startYear, Math.min(endYear, estimatedYear));
-                const position = ((clampedYear - startYear) / (endYear - startYear)) * 100;
-                
-                eraTimelineMarker.style.left = `${position}%`;
-
-                // CULTURAL INSIGHTS
-                const renderList = (ulElement, factsArray) => {
-                    ulElement.innerHTML = '';
-                    if (factsArray.length > 0) {
-                        factsArray.forEach(fact => {
-                            const li = document.createElement('li');
-                            li.textContent = fact;
-                            ulElement.appendChild(li);
-                        });
-                    } else {
-                        ulElement.innerHTML = '<li class="text-gray-400">Data unavailable for this category.</li>';
-                    }
-                };
-
-                renderList(newsFacts, data.news);
-                renderList(musicFacts, data.music);
-                renderList(siteFacts, data.sites);
-
-
-                // ARTIFACT ANALYSIS
-                analysisOutput.textContent = data.analysis || 'Analysis field missing from structured output.';
-
-                // GROUNDING SOURCES
-                sourcesList.innerHTML = '';
-                if (data.sources && Array.isArray(data.sources)) {
-                    data.sources.forEach((source, index) => {
-                        const listItem = document.createElement('li');
-                        listItem.innerHTML = `
-                            <span class="font-bold text-gray-500">${index + 1}.</span> 
-                            <a href="${source.url}" target="_blank" class="text-blue-600 hover:text-blue-800 transition duration-150">
-                                ${source.title || 'Untitled Source'}
-                            </a>
-                        `;
-                        sourcesList.appendChild(listItem);
-                    });
-                } else {
-                    sourcesList.innerHTML = '<li class="text-gray-500">No external sources were provided by the model.</li>';
-                }
-            }
-        });
-    </script>
+})();
+</script>
 </body>
 </html>
